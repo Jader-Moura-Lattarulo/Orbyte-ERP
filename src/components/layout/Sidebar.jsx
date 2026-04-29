@@ -33,19 +33,11 @@ export default function Sidebar() {
   return (
     <aside className={cn(
       "fixed left-0 top-0 h-screen bg-sidebar text-sidebar-foreground flex flex-col z-50 transition-all duration-300 border-r border-sidebar-border",
-      collapsed ? "w-[72px]" : "w-[260px]"
+      collapsed ? "w-[72px]" : "w-[240px]"
     )}>
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 h-16 border-b border-sidebar-border">
-        <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
-          <Wrench className="w-5 h-5 text-primary-foreground" />
-        </div>
-        {!collapsed && (
-          <div className="overflow-hidden">
-            <h1 className="text-base font-bold tracking-tight text-sidebar-foreground">ServiçoPro</h1>
-            <p className="text-[10px] text-sidebar-foreground/50 uppercase tracking-widest">ERP</p>
-          </div>
-        )}
+      <div className="flex items-center px-6 h-20 border-b border-sidebar-border">
+        <img src="/OrbyteLogo-vazado-neg.png" alt="Orbyte ERP" className="h-12 w-auto object-contain flex-shrink-0" />
       </div>
 
       {/* Nav */}
@@ -74,18 +66,18 @@ export default function Sidebar() {
       {/* Footer */}
       <div className="p-3 border-t border-sidebar-border space-y-1">
         <button
-          onClick={() => base44.auth.logout()}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent w-full transition-colors"
-        >
-          <LogOut className="w-5 h-5 flex-shrink-0" />
-          {!collapsed && <span>Sair</span>}
-        </button>
-        <button
           onClick={() => setCollapsed(!collapsed)}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent w-full transition-colors"
         >
           {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
           {!collapsed && <span>Recolher</span>}
+        </button>
+        <button
+          onClick={() => base44.auth.logout()}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent w-full transition-colors"
+        >
+          <LogOut className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && <span>Sair</span>}
         </button>
       </div>
     </aside>
