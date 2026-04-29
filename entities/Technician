@@ -1,0 +1,41 @@
+{
+  "name": "Technician",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome do t\u00e9cnico"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Telefone"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email"
+    },
+    "specialty": {
+      "type": "string",
+      "description": "Especialidade"
+    },
+    "color": {
+      "type": "string",
+      "description": "Cor na agenda"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "hourly_rate": {
+      "type": "number",
+      "description": "Valor hora"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

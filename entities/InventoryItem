@@ -1,0 +1,42 @@
+{
+  "name": "InventoryItem",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome da pe\u00e7a/material"
+    },
+    "sku": {
+      "type": "string",
+      "description": "C\u00f3digo SKU"
+    },
+    "category": {
+      "type": "string",
+      "description": "Categoria"
+    },
+    "quantity": {
+      "type": "number",
+      "description": "Quantidade em estoque"
+    },
+    "min_quantity": {
+      "type": "number",
+      "description": "Quantidade m\u00ednima (alerta)"
+    },
+    "unit_price": {
+      "type": "number",
+      "description": "Pre\u00e7o unit\u00e1rio"
+    },
+    "supplier": {
+      "type": "string",
+      "description": "Fornecedor"
+    },
+    "location": {
+      "type": "string",
+      "description": "Localiza\u00e7\u00e3o no estoque"
+    }
+  },
+  "required": [
+    "name",
+    "quantity"
+  ]
+}

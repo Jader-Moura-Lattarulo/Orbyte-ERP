@@ -1,0 +1,130 @@
+{
+  "name": "ServiceOrder",
+  "type": "object",
+  "properties": {
+    "order_number": {
+      "type": "string",
+      "description": "N\u00famero da OS"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "ID do cliente"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Nome do cliente"
+    },
+    "technician_id": {
+      "type": "string",
+      "description": "ID do t\u00e9cnico respons\u00e1vel"
+    },
+    "technician_name": {
+      "type": "string",
+      "description": "Nome do t\u00e9cnico"
+    },
+    "title": {
+      "type": "string",
+      "description": "T\u00edtulo resumido do servi\u00e7o"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o detalhada"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "in_progress",
+        "waiting_parts",
+        "completed",
+        "cancelled"
+      ],
+      "default": "open",
+      "description": "Status da OS"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "urgent"
+      ],
+      "default": "medium"
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data agendada"
+    },
+    "completed_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data de conclus\u00e3o"
+    },
+    "estimated_hours": {
+      "type": "number",
+      "description": "Horas estimadas"
+    },
+    "actual_hours": {
+      "type": "number",
+      "description": "Horas realizadas"
+    },
+    "service_value": {
+      "type": "number",
+      "description": "Valor do servi\u00e7o (m\u00e3o de obra)"
+    },
+    "parts_value": {
+      "type": "number",
+      "description": "Valor das pe\u00e7as"
+    },
+    "total_value": {
+      "type": "number",
+      "description": "Valor total"
+    },
+    "parts_used": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "part_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit_price": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "Pe\u00e7as utilizadas"
+    },
+    "signature_url": {
+      "type": "string",
+      "description": "URL da assinatura digital"
+    },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "URLs de fotos do servi\u00e7o"
+    },
+    "ai_description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o gerada por IA"
+    },
+    "ai_suggested_price": {
+      "type": "number",
+      "description": "Pre\u00e7o sugerido pela IA"
+    }
+  },
+  "required": [
+    "client_id",
+    "title"
+  ]
+}

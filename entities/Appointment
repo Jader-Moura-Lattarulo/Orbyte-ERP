@@ -1,0 +1,68 @@
+{
+  "name": "Appointment",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "T\u00edtulo do agendamento"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "ID do cliente"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Nome do cliente"
+    },
+    "technician_id": {
+      "type": "string",
+      "description": "ID do t\u00e9cnico"
+    },
+    "technician_name": {
+      "type": "string",
+      "description": "Nome do t\u00e9cnico"
+    },
+    "service_order_id": {
+      "type": "string",
+      "description": "OS vinculada"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data"
+    },
+    "start_time": {
+      "type": "string",
+      "description": "Hora in\u00edcio (HH:mm)"
+    },
+    "end_time": {
+      "type": "string",
+      "description": "Hora fim (HH:mm)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "confirmed",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ],
+      "default": "scheduled"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es"
+    },
+    "color": {
+      "type": "string",
+      "description": "Cor do agendamento"
+    }
+  },
+  "required": [
+    "title",
+    "date",
+    "start_time",
+    "end_time"
+  ]
+}
