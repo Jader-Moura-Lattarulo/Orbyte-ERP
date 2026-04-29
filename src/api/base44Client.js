@@ -12,14 +12,28 @@ const createMockEntity = (name) => ({
 
 export const base44 = {
   auth: {
-    me: async () => ({ id: '1', name: 'Admin Local', email: 'admin@local.com' }),
+    login: async (email, password) => {
+      // Mock login validation
+      if (email === 'admin@orbyte.com' && password === 'admin') {
+        localStorage.setItem('orbyte_mock_token', 'mock_valid_token');
+        return { id: '1', name: 'Admin Local', email: 'admin@orbyte.com' };
+      }
+      throw new Error('E-mail ou senha incorretos.');
+    },
+    me: async () => {
+      // Check if logged in locally
+      if (localStorage.getItem('orbyte_mock_token')) {
+        return { id: '1', name: 'Admin Local', email: 'admin@orbyte.com' };
+      }
+      throw { status: 401, message: 'Não autenticado' };
+    },
     logout: () => { 
       console.log('Mock logout'); 
-      window.location.reload(); 
+      localStorage.removeItem('orbyte_mock_token');
     },
     redirectToLogin: () => { 
       console.log('Mock redirectToLogin'); 
-      // Em um ambiente puramente local e mockado, não redirecionamos
+      window.location.href = '/login';
     }
   },
   entities: {
