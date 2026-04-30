@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/apiClient';
 import { Plus, Search, Wrench, Phone, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,16 +19,16 @@ export default function Technicians() {
 
   const { data: technicians = [], isLoading } = useQuery({
     queryKey: ['technicians'],
-    queryFn: () => base44.entities.Technician.list('-created_date', 100),
+    queryFn: () => api.entities.Technician.list('-created_date', 100),
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Technician.create(data),
+    mutationFn: (data) => api.entities.Technician.create(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['technicians'] }); setShowForm(false); },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Technician.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.Technician.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['technicians'] }); setShowForm(false); setEditingTech(null); },
   });
 

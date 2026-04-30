@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/apiClient';
 import { Plus, Search, AlertTriangle, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,16 +19,16 @@ export default function Inventory() {
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['inventory'],
-    queryFn: () => base44.entities.InventoryItem.list('-created_date', 200),
+    queryFn: () => api.entities.InventoryItem.list('-created_date', 200),
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.InventoryItem.create(data),
+    mutationFn: (data) => api.entities.InventoryItem.create(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['inventory'] }); setShowForm(false); },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.InventoryItem.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.InventoryItem.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['inventory'] }); setShowForm(false); setEditingItem(null); },
   });
 

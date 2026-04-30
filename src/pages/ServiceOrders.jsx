@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/apiClient';
 import { Plus, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,26 +20,26 @@ export default function ServiceOrders() {
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['service-orders'],
-    queryFn: () => base44.entities.ServiceOrder.list('-created_date', 200),
+    queryFn: () => api.entities.ServiceOrder.list('-created_date', 200),
   });
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list('-created_date', 200),
+    queryFn: () => api.entities.Client.list('-created_date', 200),
   });
 
   const { data: technicians = [] } = useQuery({
     queryKey: ['technicians'],
-    queryFn: () => base44.entities.Technician.list(),
+    queryFn: () => api.entities.Technician.list(),
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.ServiceOrder.create(data),
+    mutationFn: (data) => api.entities.ServiceOrder.create(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['service-orders'] }); setShowForm(false); },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ServiceOrder.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.ServiceOrder.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['service-orders'] }); setShowForm(false); setEditingOrder(null); },
   });
 

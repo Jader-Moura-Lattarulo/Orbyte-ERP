@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/apiClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,7 +21,7 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      await base44.auth.login(email, password);
+      await api.auth.login(email, password);
       await checkUserAuth(); // Atualiza o estado do AuthContext
       navigate('/');
     } catch (err) {

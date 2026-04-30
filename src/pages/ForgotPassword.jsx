@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { api } from '@/api/apiClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,7 +38,7 @@ export default function ForgotPassword() {
     }, 600); // Simulando um delay de rede
   };
 
-  const handleChangePassword = (e) => {
+  const handleChangePassword = async (e) => {
     e.preventDefault();
     
     if (newPassword !== confirmPassword) {
@@ -51,15 +52,23 @@ export default function ForgotPassword() {
 
     setIsLoading(true);
 
-    // Mock save password
-    setTimeout(() => {
+    try {
+      await api.auth.changePassword(newPassword);
       toast({
         title: "Senha atualizada com sucesso",
         description: "Você já pode fazer login com sua nova senha.",
         className: "bg-green-600 text-white border-green-700",
       });
       navigate('/login');
-    }, 600);
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível alterar a senha.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

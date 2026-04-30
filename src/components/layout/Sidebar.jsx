@@ -14,7 +14,8 @@ import {
   LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/apiClient';
+import { useAuth } from '@/lib/AuthContext';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
@@ -29,6 +30,7 @@ const navItems = [
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
 
   return (
     <aside className={cn(
@@ -61,6 +63,22 @@ export default function Sidebar() {
             </Link>
           );
         })}
+
+        {/* Admin Section */}
+        {user?.role === 'admin' && (
+          <Link
+            to="/usuarios"
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 mt-4 border-t border-sidebar-border pt-4",
+              location.pathname.startsWith('/usuarios')
+                ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-primary/25"
+                : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+            )}
+          >
+            <Settings className="w-5 h-5 flex-shrink-0" />
+            {!collapsed && <span>Gerenciar Usuários</span>}
+          </Link>
+        )}
       </nav>
 
       {/* Footer */}
@@ -73,7 +91,7 @@ export default function Sidebar() {
           {!collapsed && <span>Recolher</span>}
         </button>
         <button
-          onClick={() => base44.auth.logout()}
+          onClick={() => api.auth.logout()}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent w-full transition-colors"
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />

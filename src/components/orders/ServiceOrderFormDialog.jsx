@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sparkles, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/apiClient';
 
 export default function ServiceOrderFormDialog({ open, onOpenChange, order, clients, technicians, onSave, isLoading }) {
   const [form, setForm] = useState({
@@ -51,7 +51,7 @@ export default function ServiceOrderFormDialog({ open, onOpenChange, order, clie
   const generateAIDescription = async () => {
     if (!form.title) return;
     setAiLoading(true);
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await api.integrations.Core.InvokeLLM({
       prompt: `Gere uma descrição técnica profissional para uma ordem de serviço com o título: "${form.title}". 
       Cliente: ${form.client_name || 'não informado'}. 
       Escreva em português, de forma clara e objetiva, com no máximo 3 parágrafos. 
@@ -64,7 +64,7 @@ export default function ServiceOrderFormDialog({ open, onOpenChange, order, clie
   const suggestPrice = async () => {
     if (!form.title) return;
     setAiLoading(true);
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await api.integrations.Core.InvokeLLM({
       prompt: `Sugira um preço justo em reais (BRL) para o seguinte serviço: "${form.title}". 
       ${form.description ? `Descrição: ${form.description}` : ''}
       Considere o mercado brasileiro. Retorne apenas o objeto JSON.`,

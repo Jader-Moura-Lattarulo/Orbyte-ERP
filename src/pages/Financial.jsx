@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/apiClient';
 import { Plus, Search, Filter, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,16 +26,16 @@ export default function Financial() {
 
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ['financials'],
-    queryFn: () => base44.entities.FinancialEntry.list('-created_date', 200),
+    queryFn: () => api.entities.FinancialEntry.list('-created_date', 200),
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.FinancialEntry.create(data),
+    mutationFn: (data) => api.entities.FinancialEntry.create(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['financials'] }); setShowForm(false); },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.FinancialEntry.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.FinancialEntry.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['financials'] }); setShowForm(false); setEditingEntry(null); },
   });
 

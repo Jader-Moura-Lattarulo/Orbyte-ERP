@@ -15,6 +15,8 @@ import Inventory from '@/pages/Inventory';
 import Technicians from '@/pages/Technicians';
 import Login from '@/pages/Login';
 import ForgotPassword from '@/pages/ForgotPassword';
+import UsersManagement from '@/pages/UsersManagement';
+import AdminRoute from '@/components/layout/AdminRoute';
 
 const PrivateRoute = () => {
   const { isAuthenticated, isLoadingAuth } = useAuth();
@@ -59,6 +61,10 @@ const AuthenticatedApp = () => {
           <Route path="/agenda" element={<Agenda />} />
           <Route path="/estoque" element={<Inventory />} />
           <Route path="/tecnicos" element={<Technicians />} />
+          
+          <Route element={<AdminRoute />}>
+            <Route path="/usuarios" element={<UsersManagement />} />
+          </Route>
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

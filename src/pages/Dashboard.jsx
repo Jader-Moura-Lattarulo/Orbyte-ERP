@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/apiClient';
 import { ClipboardList, Users, DollarSign, TrendingUp, AlertTriangle, Clock, CheckCircle2, Wrench } from 'lucide-react';
 import StatCard from '@/components/shared/StatCard';
 import PageHeader from '@/components/shared/PageHeader';
@@ -14,22 +14,22 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function Dashboard() {
   const { data: orders = [], isLoading: loadingOrders } = useQuery({
     queryKey: ['service-orders'],
-    queryFn: () => base44.entities.ServiceOrder.list('-created_date', 100),
+    queryFn: () => api.entities.ServiceOrder.list('-created_date', 100),
   });
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list('-created_date', 100),
+    queryFn: () => api.entities.Client.list('-created_date', 100),
   });
 
   const { data: financials = [] } = useQuery({
     queryKey: ['financials'],
-    queryFn: () => base44.entities.FinancialEntry.list('-created_date', 100),
+    queryFn: () => api.entities.FinancialEntry.list('-created_date', 100),
   });
 
   const { data: appointments = [] } = useQuery({
     queryKey: ['appointments'],
-    queryFn: () => base44.entities.Appointment.list('-created_date', 50),
+    queryFn: () => api.entities.Appointment.list('-created_date', 50),
   });
 
   const openOrders = orders.filter(o => o.status === 'open' || o.status === 'in_progress');
