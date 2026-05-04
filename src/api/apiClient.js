@@ -1,79 +1,86 @@
-import { appParams } from '@/lib/app-params';
-import { supabase } from '@/lib/supabase';
-
-const { appId, token, functionsVersion, appBaseUrl } = appParams;
-
-// Mapeamento de Entidades para Tabelas do Supabase
-const getTableName = (name) => {
-  const map = {
-    Technician: 'technicians',
-    ServiceOrder: 'service_orders',
-    Client: 'clients',
-    InventoryItem: 'inventory_items',
-    FinancialEntry: 'financial_entries',
-    Appointment: 'appointments'
-  };
-  return map[name] || name.toLowerCase();
+const getBaseUrl = () => {
+  let url = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+  // Remove barra no final se existir
+  return url.endsWith('/') ? url.slice(0, -1) : url;
 };
 
-// Cliente gerador de CRUD do Supabase
-const createSupabaseEntity = (name) => {
-  const table = getTableName(name);
+const API_URL = getBaseUrl();
+
+// Helper para fazer requisições autenticadas
+const fetchWithAuth = async (endpoint, options = {}) => {
+  const token = localStorage.getItem('orbyte_token');
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+    ...options.headers,
+  };
+
+  // Garante que o endpoint comece com barra
+  const safeEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const fullUrl = `${API_URL}${safeEndpoint}`;
+  
+  console.log(`[API] Fetching: ${fullUrl}`);
+
+  const response = await fetch(fullUrl, {
+    ...options,
+    headers,
+  });
+
+  if (response.status === 401) {
+    localStorage.removeItem('orbyte_token');
+    if (!window.location.pathname.includes('/login')) {
+      window.location.href = '/login';
+    }
+  }
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || data.message || 'Erro na requisição');
+  }
+
+  return data;
+};
+
+// Mapeamento de Entidades para Endpoints da API
+const getEntityEndpoint = (name) => {
+  const map = {
+    Technician: '/entities/technicians',
+    ServiceOrder: '/entities/service_orders',
+    Client: '/entities/clients',
+    InventoryItem: '/entities/inventory_items',
+    FinancialEntry: '/entities/financial_entries',
+    Appointment: '/entities/appointments'
+  };
+  return map[name] || `/entities/${name.toLowerCase()}`;
+};
+
+const createApiEntity = (name) => {
+  const endpoint = getEntityEndpoint(name);
   
   return {
     list: async (orderBy = '-created_date', limit = 100) => {
-      if (!supabase) {
-        console.warn('Supabase não inicializado. Retornando array vazio.');
-        return [];
-      }
-      
-      const isDesc = orderBy.startsWith('-');
-      const orderCol = isDesc ? orderBy.substring(1) : orderBy;
-      
-      const { data, error } = await supabase
-        .from(table)
-        .select('*')
-        .order(orderCol, { ascending: !isDesc })
-        .limit(limit);
-        
-      if (error) throw error;
-      return data || [];
+      const query = new URLSearchParams({ orderBy, limit }).toString();
+      return fetchWithAuth(`${endpoint}?${query}`);
     },
     
     create: async (data) => {
-      if (!supabase) throw new Error('Supabase não configurado');
-      const { data: result, error } = await supabase
-        .from(table)
-        .insert([data])
-        .select()
-        .single();
-        
-      if (error) throw error;
-      return result;
+      return fetchWithAuth(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
     },
     
     update: async (id, data) => {
-      if (!supabase) throw new Error('Supabase não configurado');
-      const { data: result, error } = await supabase
-        .from(table)
-        .update(data)
-        .eq('id', id)
-        .select()
-        .single();
-        
-      if (error) throw error;
-      return result;
+      return fetchWithAuth(`${endpoint}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
     },
     
     delete: async (id) => {
-      if (!supabase) throw new Error('Supabase não configurado');
-      const { error } = await supabase
-        .from(table)
-        .delete()
-        .eq('id', id);
-        
-      if (error) throw error;
-      return { success: true };
+      return fetchWithAuth(`${endpoint}/${id}`, {
+        method: 'DELETE',
+      });
     }
   };
 };
@@ -81,67 +88,93 @@ const createSupabaseEntity = (name) => {
 export const api = {
   auth: {
     login: async (email, password) => {
-      if (!supabase) throw new Error('O banco de dados não está configurado.');
+      const data = await fetchWithAuth('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
       
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      
-      if (error) {
-        throw new Error('E-mail ou senha incorretos.');
+      if (data.token) {
+        localStorage.setItem('orbyte_token', data.token);
       }
       
-      return { 
-        id: data.user.id, 
-        name: data.user.user_metadata?.name || email, 
-        email: data.user.email,
-        role: data.user.user_metadata?.role || 'user'
-      };
+      return data.user;
     },
     
     me: async () => {
-      if (!supabase) throw { status: 401, message: 'Supabase não configurado' };
+      const token = localStorage.getItem('orbyte_token');
+      if (!token) throw { status: 401, message: 'Não autenticado' };
       
-      const { data: { user }, error } = await supabase.auth.getUser();
-      
-      if (error || !user) {
-        throw { status: 401, message: 'Não autenticado' };
+      try {
+        const data = await fetchWithAuth('/auth/me');
+        return data.user;
+      } catch (error) {
+        throw { status: 401, message: error.message };
       }
-      
-      return { 
-        id: user.id, 
-        name: user.user_metadata?.name || user.email, 
-        email: user.email,
-        role: user.user_metadata?.role || 'user'
-      };
     },
     
-    logout: async () => { 
-      if (supabase) {
-        await supabase.auth.signOut();
-      }
-      window.location.href = '/login';
+    logout: () => {
+      localStorage.removeItem('orbyte_token');
+      window.location.href = `${import.meta.env.BASE_URL}login`;
     },
     
-    redirectToLogin: () => { 
-      window.location.href = '/login';
+    redirectToLogin: () => {
+      window.location.href = `${import.meta.env.BASE_URL}login`;
     },
     
     changePassword: async (newPassword) => {
-      if (!supabase) throw new Error('Supabase não configurado');
-      
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
-      
-      if (error) throw error;
-      return true;
+      return fetchWithAuth('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ newPassword }),
+      });
+    },
+    
+    verifyIdentity: async (email, birthdate) => {
+      return fetchWithAuth('/auth/verify-identity', {
+        method: 'POST',
+        body: JSON.stringify({ email, birthdate }),
+      });
+    },
+    
+    recoverPassword: async (email, birthdate, newPassword) => {
+      return fetchWithAuth('/auth/recover-password', {
+        method: 'POST',
+        body: JSON.stringify({ email, birthdate, newPassword }),
+      });
+    },
+
+    listUsers: async () => {
+      const data = await fetchWithAuth('/auth/users');
+      return data.users;
+    },
+
+    createUser: async (userData) => {
+      return fetchWithAuth('/auth/users', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+      });
+    },
+
+    updateUser: async (id, userData) => {
+      return fetchWithAuth(`/auth/users/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(userData),
+      });
+    },
+
+    deleteUser: async (id) => {
+      return fetchWithAuth(`/auth/users/${id}`, {
+        method: 'DELETE',
+      });
     }
   },
   
   entities: {
-    Technician: createSupabaseEntity('Technician'),
-    ServiceOrder: createSupabaseEntity('ServiceOrder'),
-    Client: createSupabaseEntity('Client'),
-    InventoryItem: createSupabaseEntity('InventoryItem'),
-    FinancialEntry: createSupabaseEntity('FinancialEntry'),
-    Appointment: createSupabaseEntity('Appointment')
+    Technician: createApiEntity('Technician'),
+    ServiceOrder: createApiEntity('ServiceOrder'),
+    Client: createApiEntity('Client'),
+    InventoryItem: createApiEntity('InventoryItem'),
+    FinancialEntry: createApiEntity('FinancialEntry'),
+    Appointment: createApiEntity('Appointment')
   },
   
   integrations: {

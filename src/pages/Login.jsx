@@ -40,7 +40,7 @@ export default function Login() {
       <div className="w-full max-w-md space-y-8">
         <Card className="border-slate-200 shadow-xl">
           <CardHeader className="space-y-2 text-center flex flex-col items-center pb-6">
-            <img src="/OrbyteLogo-vazado.svg" alt="Orbyte ERP" className="h-20 w-auto mb-2" />
+            <img src={`${import.meta.env.BASE_URL}OrbyteLogo-vazado.svg`} alt="Orbyte ERP" className="h-20 w-auto mb-2" />
             <CardTitle className="text-2xl font-bold tracking-tight pt-2">Acesse sua conta</CardTitle>
             <CardDescription className="text-slate-500">
               Insira suas credenciais para entrar no sistema.

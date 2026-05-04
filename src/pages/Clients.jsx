@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/apiClient';
-import { Plus, Search, Phone, Mail, MapPin } from 'lucide-react';
+import { Plus, Search, Phone, Mail, MapPin, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,12 +12,26 @@ import EmptyState from '@/components/shared/EmptyState';
 import ClientFormDialog from '@/components/clients/ClientFormDialog';
 import { Link } from 'react-router-dom';
 import { Users } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/components/ui/use-toast';
 
 export default function Clients() {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
+  const [clientToDelete, setClientToDelete] = useState(null);
+  
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ['clients'],
@@ -26,12 +40,33 @@ export default function Clients() {
 
   const createMutation = useMutation({
     mutationFn: (data) => api.entities.Client.create(data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['clients'] }); setShowForm(false); },
+    onSuccess: () => { 
+      queryClient.invalidateQueries({ queryKey: ['clients'] }); 
+      setShowForm(false); 
+      toast({ title: "Cliente criado", description: "O cadastro foi realizado com sucesso." });
+    },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => api.entities.Client.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['clients'] }); setShowForm(false); setEditingClient(null); },
+    onSuccess: () => { 
+      queryClient.invalidateQueries({ queryKey: ['clients'] }); 
+      setShowForm(false); 
+      setEditingClient(null); 
+      toast({ title: "Cliente atualizado", description: "As alterações foram salvas." });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.entities.Client.delete(id),
+    onSuccess: () => { 
+      queryClient.invalidateQueries({ queryKey: ['clients'] }); 
+      setClientToDelete(null);
+      toast({ title: "Cliente removido", description: "O registro foi excluído permanentemente." });
+    },
+    onError: (err) => {
+      toast({ variant: "destructive", title: "Erro ao excluir", description: err.message });
+    }
   });
 
   const filtered = clients.filter(c =>
@@ -81,7 +116,20 @@ export default function Clients() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{client.name}</h3>
-                      <StatusBadge status={client.status || 'active'} />
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={client.status || 'active'} />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setClientToDelete(client);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                     <div className="mt-2 space-y-1">
                       {client.phone && (
@@ -107,6 +155,28 @@ export default function Clients() {
           ))}
         </div>
       )}
+
+      {/* Diálogo de Exclusão */}
+      <AlertDialog open={!!clientToDelete} onOpenChange={(open) => !open && setClientToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o cliente 
+              <strong> {clientToDelete?.name}</strong> e todos os dados associados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => deleteMutation.mutate(clientToDelete?.id)}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <ClientFormDialog
         open={showForm}

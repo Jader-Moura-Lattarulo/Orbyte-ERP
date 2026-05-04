@@ -19,23 +19,22 @@ export default function ForgotPassword() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleVerify = (e) => {
+  const handleVerify = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Mock verification
-    setTimeout(() => {
-      if (email === 'admin@orbyte.com' && birthdate === '1990-01-01') {
-        setStep(2);
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Usuário não encontrado",
-          description: "Os dados informados não conferem em nosso sistema.",
-        });
-      }
+    try {
+      await api.auth.verifyIdentity(email, birthdate);
+      setStep(2);
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Dados incorretos",
+        description: err.message || "Os dados informados não conferem em nosso sistema.",
+      });
+    } finally {
       setIsLoading(false);
-    }, 600); // Simulando um delay de rede
+    }
   };
 
   const handleChangePassword = async (e) => {
@@ -53,7 +52,7 @@ export default function ForgotPassword() {
     setIsLoading(true);
 
     try {
-      await api.auth.changePassword(newPassword);
+      await api.auth.recoverPassword(email, birthdate, newPassword);
       toast({
         title: "Senha atualizada com sucesso",
         description: "Você já pode fazer login com sua nova senha.",
@@ -64,7 +63,7 @@ export default function ForgotPassword() {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível alterar a senha.",
+        description: err.message || "Não foi possível alterar a senha.",
       });
     } finally {
       setIsLoading(false);
@@ -77,7 +76,7 @@ export default function ForgotPassword() {
         
         <Card className="border-slate-200 shadow-xl">
           <CardHeader className="space-y-2 text-center flex flex-col items-center pb-6">
-            <img src="/OrbyteLogo-vazado.svg" alt="Orbyte ERP" className="h-10 w-auto mb-2" />
+            <img src={`${import.meta.env.BASE_URL}OrbyteLogo-vazado.svg`} alt="Orbyte ERP" className="h-10 w-auto mb-2" />
             <CardTitle className="text-2xl font-bold tracking-tight pt-2">
               {step === 1 ? 'Recuperar Senha' : 'Criar Nova Senha'}
             </CardTitle>

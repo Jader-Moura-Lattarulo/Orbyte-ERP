@@ -39,7 +39,7 @@ export default function Sidebar() {
     )}>
       {/* Logo */}
       <div className="flex items-center px-6 h-20 border-b border-sidebar-border">
-        <img src="/OrbyteLogo-vazado-neg.png" alt="Orbyte ERP" className="h-12 w-auto object-contain flex-shrink-0" />
+        <img src={`${import.meta.env.BASE_URL}OrbyteLogo-vazado-neg.png`} alt="Orbyte ERP" className="h-12 w-auto object-contain flex-shrink-0" />
       </div>
 
       {/* Nav */}

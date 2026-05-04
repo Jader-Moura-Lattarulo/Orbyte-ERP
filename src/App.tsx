@@ -74,11 +74,10 @@ const AuthenticatedApp = () => {
 
 
 function App() {
-
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
+        <Router basename="/portfolio/orbyte-erp">
           <AuthenticatedApp />
         </Router>
         <Toaster />
