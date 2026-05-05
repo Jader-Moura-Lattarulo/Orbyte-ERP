@@ -7,22 +7,31 @@ import { Card, CardContent } from '@/components/ui/card';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import AppointmentFormDialog from '@/components/agenda/AppointmentFormDialog';
-import { format, addDays, startOfWeek, isSameDay, addWeeks, subWeeks } from 'date-fns';
+import ServiceOrderFormDialog from '@/components/orders/ServiceOrderFormDialog';
+import { format, addDays, startOfWeek, isSameDay, addWeeks, subWeeks, parseISO, addHours } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const HOURS = Array.from({ length: 12 }, (_, i) => `${String(i + 7).padStart(2, '0')}:00`);
 
 export default function Agenda() {
   const [currentWeek, setCurrentWeek] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [showForm, setShowForm] = useState(false);
+  const [showOSDialog, setShowOSDialog] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState(null);
+  const [selectedOS, setSelectedOS] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: appointments = [] } = useQuery({
     queryKey: ['appointments'],
     queryFn: () => api.entities.Appointment.list('-created_date', 200),
+  });
+
+  const { data: orders = [] } = useQuery({
+    queryKey: ['service-orders'],
+    queryFn: () => api.entities.ServiceOrder.list('-created_date', 200),
   });
 
   const { data: clients = [] } = useQuery({
@@ -49,7 +58,30 @@ export default function Agenda() {
 
   const getAppointmentsForDay = (date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    return appointments.filter(a => a.date === dateStr);
+    const dayAppts = appointments.filter(a => a.date === dateStr);
+    
+    const dayOrders = orders
+      .filter(o => o.scheduled_date && o.scheduled_date.startsWith(dateStr))
+      .map(o => {
+        const scheduledDate = parseISO(o.scheduled_date);
+        const startTime = format(scheduledDate, 'HH:mm');
+        const duration = parseFloat(o.estimated_hours) || 1;
+        const endTimeDate = addHours(scheduledDate, duration);
+        const endTime = format(endTimeDate, 'HH:mm');
+        
+        return {
+          id: `os-${o.id}`,
+          title: `OS: ${o.title}`,
+          date: dateStr,
+          start_time: startTime,
+          end_time: endTime,
+          technician_name: o.technician_name,
+          is_os: true,
+          original_os: o
+        };
+      });
+
+    return [...dayAppts, ...dayOrders];
   };
 
   const handleSlotClick = (date, time) => {
@@ -127,12 +159,28 @@ export default function Agenda() {
                         {dayAppts.map(apt => (
                           <div
                             key={apt.id}
-                            className="text-xs p-1.5 rounded-lg bg-primary/10 border border-primary/20 mb-1 cursor-pointer hover:bg-primary/20 transition-colors"
-                            onClick={(e) => { e.stopPropagation(); setEditingAppointment(apt); setShowForm(true); }}
+                            className={cn(
+                              "text-xs p-1.5 rounded-lg border mb-1 cursor-pointer transition-colors",
+                              apt.is_os 
+                                ? "bg-amber-100 border-amber-300 hover:bg-amber-200" 
+                                : "bg-primary/10 border-primary/20 hover:bg-primary/20"
+                            )}
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              if (apt.is_os) {
+                                setSelectedOS(apt.original_os);
+                                setShowOSDialog(true);
+                              } else {
+                                setEditingAppointment(apt); 
+                                setShowForm(true); 
+                              }
+                            }}
                           >
-                            <p className="font-medium text-primary truncate">{apt.title}</p>
-                            <p className="text-muted-foreground">{apt.start_time}-{apt.end_time}</p>
-                            {apt.technician_name && <p className="text-muted-foreground truncate">{apt.technician_name}</p>}
+                            <p className={cn("font-medium truncate", apt.is_os ? "text-amber-800" : "text-primary")}>
+                              {apt.title}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">{apt.start_time}-{apt.end_time}</p>
+                            {apt.technician_name && <p className="text-[10px] text-muted-foreground truncate">{apt.technician_name}</p>}
                           </div>
                         ))}
                       </div>
@@ -155,6 +203,16 @@ export default function Agenda() {
         existingAppointments={appointments}
         onSave={handleSave}
         isLoading={createMutation.isPending || updateMutation.isPending}
+      />
+
+      <ServiceOrderFormDialog
+        open={showOSDialog}
+        onOpenChange={setShowOSDialog}
+        order={selectedOS}
+        clients={clients}
+        technicians={technicians}
+        onSave={() => {}}
+        readOnly={true}
       />
     </div>
   );

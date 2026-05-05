@@ -66,8 +66,8 @@ router.post('/:entity', async (req, res) => {
     const columns = Object.keys(data).join(', ');
     const values = Object.values(data);
     const placeholders = values.map(() => '?').join(', ');
-    await db.query(`INSERT INTO ${table} (${columns}) VALUES (${placeholders})`, values);
-    res.status(201).json({ success: true });
+    const [result] = await db.query(`INSERT INTO ${table} (${columns}) VALUES (${placeholders})`, values);
+    res.status(201).json({ success: true, id: result.insertId });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
       return res.status(400).json({ error: 'Já existe um cliente com este e-mail ou documento.' });
