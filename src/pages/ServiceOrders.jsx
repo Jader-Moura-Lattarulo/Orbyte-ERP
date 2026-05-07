@@ -43,6 +43,11 @@ export default function ServiceOrders() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['service-orders'] }); setShowForm(false); setEditingOrder(null); },
   });
 
+  const { data: appointments = [] } = useQuery({
+    queryKey: ['appointments'],
+    queryFn: () => api.entities.Appointment.list(),
+  });
+
   const filtered = orders.filter(o => {
     const matchSearch = o.title?.toLowerCase().includes(search.toLowerCase()) ||
       o.client_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -113,9 +118,11 @@ export default function ServiceOrders() {
         order={editingOrder}
         clients={clients}
         technicians={technicians}
+        existingAppointments={appointments}
+        existingOrders={orders}
         onSave={handleSave}
         isLoading={createMutation.isPending || updateMutation.isPending}
       />
     </div>
   );
-}
+}

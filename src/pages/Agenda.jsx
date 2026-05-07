@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/apiClient';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import PageHeader from '@/components/shared/PageHeader';
-import StatusBadge from '@/components/shared/StatusBadge';
 import AppointmentFormDialog from '@/components/agenda/AppointmentFormDialog';
 import ServiceOrderFormDialog from '@/components/orders/ServiceOrderFormDialog';
 import { format, addDays, startOfWeek, isSameDay, addWeeks, subWeeks, parseISO, addHours } from 'date-fns';
@@ -24,62 +23,87 @@ export default function Agenda() {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: appointments = [] } = useQuery({
+  // Data Fetching
+  const appointmentsQuery = useQuery({
     queryKey: ['appointments'],
-    queryFn: () => api.entities.Appointment.list('-created_date', 200),
+    queryFn: () => api.entities.Appointment.list('-created_date', 500),
   });
 
-  const { data: orders = [] } = useQuery({
+  const ordersQuery = useQuery({
     queryKey: ['service-orders'],
-    queryFn: () => api.entities.ServiceOrder.list('-created_date', 200),
+    queryFn: () => api.entities.ServiceOrder.list('-created_date', 500),
   });
 
-  const { data: clients = [] } = useQuery({
+  const clientsQuery = useQuery({
     queryKey: ['clients'],
     queryFn: () => api.entities.Client.list(),
   });
 
-  const { data: technicians = [] } = useQuery({
+  const techniciansQuery = useQuery({
     queryKey: ['technicians'],
     queryFn: () => api.entities.Technician.list(),
   });
 
+  // Data Normalization
+  const appointments = useMemo(() => {
+    const data = appointmentsQuery.data;
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.data)) return data.data;
+    return [];
+  }, [appointmentsQuery.data]);
+
+  const orders = useMemo(() => {
+    const data = ordersQuery.data;
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.data)) return data.data;
+    return [];
+  }, [ordersQuery.data]);
+
+  const clients = Array.isArray(clientsQuery.data) ? clientsQuery.data : (clientsQuery.data?.data || []);
+  const technicians = Array.isArray(techniciansQuery.data) ? techniciansQuery.data : (techniciansQuery.data?.data || []);
+
   const createMutation = useMutation({
     mutationFn: (data) => api.entities.Appointment.create(data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['appointments'] }); setShowForm(false); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      setShowForm(false);
+      toast.success('Agendamento criado!');
+    },
+    onError: (err) => toast.error(err.message)
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => api.entities.Appointment.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['appointments'] }); setShowForm(false); setEditingAppointment(null); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      setShowForm(false);
+      setEditingAppointment(null);
+      toast.success('Agendamento atualizado!');
+    },
+    onError: (err) => toast.error(err.message)
   });
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(currentWeek, i));
 
   const getAppointmentsForDay = (date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    const dayAppts = appointments.filter(a => a.date === dateStr);
     
+    const dayAppts = appointments.filter(a => {
+      if (!a || !a.date) return false;
+      const apptDate = String(a.date).trim().split(' ')[0].split('T')[0];
+      return apptDate === dateStr;
+    });
+
     const dayOrders = orders
-      .filter(o => o.scheduled_date && o.scheduled_date.startsWith(dateStr))
+      .filter(o => o && o.scheduled_date && String(o.scheduled_date).startsWith(dateStr))
       .map(o => {
-        const scheduledDate = parseISO(o.scheduled_date);
-        const startTime = format(scheduledDate, 'HH:mm');
-        const duration = parseFloat(o.estimated_hours) || 1;
-        const endTimeDate = addHours(scheduledDate, duration);
-        const endTime = format(endTimeDate, 'HH:mm');
-        
-        return {
-          id: `os-${o.id}`,
-          title: `OS: ${o.title}`,
-          date: dateStr,
-          start_time: startTime,
-          end_time: endTime,
-          technician_name: o.technician_name,
-          is_os: true,
-          original_os: o
-        };
-      });
+        try {
+          const sd = parseISO(o.scheduled_date);
+          const start = format(sd, 'HH:mm');
+          const end = format(addHours(sd, parseFloat(o.estimated_hours) || 1), 'HH:mm');
+          return { ...o, id: `os-${o.id}`, is_os: true, start_time: start, end_time: end, original_os: o };
+        } catch { return null; }
+      }).filter(Boolean);
 
     return [...dayAppts, ...dayOrders];
   };
@@ -117,7 +141,7 @@ export default function Agenda() {
         </div>
       </PageHeader>
 
-      <Card className="border-border/50 overflow-hidden">
+      <Card className="border-border/50 overflow-hidden shadow-sm">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <div className="min-w-[800px]">
@@ -149,38 +173,44 @@ export default function Agenda() {
                     {hour}
                   </div>
                   {days.map(day => {
-                    const dayAppts = getAppointmentsForDay(day).filter(a => a.start_time?.startsWith(hour.split(':')[0]));
+                    const hPart = hour.split(':')[0];
+                    const dayItems = getAppointmentsForDay(day).filter(item => {
+                      // Fallback para agendamentos antigos sem start_time
+                      const st = item.start_time || (item.end_time === '10:00' ? '09:00' : '07:00');
+                      return st.startsWith(hPart);
+                    });
+
                     return (
                       <div
                         key={day.toString()}
                         className="border-l border-border/30 p-1 hover:bg-muted/30 cursor-pointer transition-colors relative"
                         onClick={() => handleSlotClick(day, hour)}
                       >
-                        {dayAppts.map(apt => (
+                        {dayItems.map(item => (
                           <div
-                            key={apt.id}
+                            key={item.id}
                             className={cn(
                               "text-xs p-1.5 rounded-lg border mb-1 cursor-pointer transition-colors",
-                              apt.is_os 
+                              item.is_os 
                                 ? "bg-amber-100 border-amber-300 hover:bg-amber-200" 
                                 : "bg-primary/10 border-primary/20 hover:bg-primary/20"
                             )}
                             onClick={(e) => { 
                               e.stopPropagation(); 
-                              if (apt.is_os) {
-                                setSelectedOS(apt.original_os);
+                              if (item.is_os) {
+                                setSelectedOS(item.original_os);
                                 setShowOSDialog(true);
                               } else {
-                                setEditingAppointment(apt); 
+                                setEditingAppointment(item); 
                                 setShowForm(true); 
                               }
                             }}
                           >
-                            <p className={cn("font-medium truncate", apt.is_os ? "text-amber-800" : "text-primary")}>
-                              {apt.title}
+                            <p className={cn("font-medium truncate", item.is_os ? "text-amber-800" : "text-primary")}>
+                              {item.title}
                             </p>
-                            <p className="text-[10px] text-muted-foreground">{apt.start_time}-{apt.end_time}</p>
-                            {apt.technician_name && <p className="text-[10px] text-muted-foreground truncate">{apt.technician_name}</p>}
+                            <p className="text-[10px] text-muted-foreground">{item.start_time || '00:00'}-{item.end_time || '00:00'}</p>
+                            {item.technician_name && <p className="text-[10px] text-muted-foreground truncate">{item.technician_name}</p>}
                           </div>
                         ))}
                       </div>
@@ -201,6 +231,7 @@ export default function Agenda() {
         clients={clients}
         technicians={technicians}
         existingAppointments={appointments}
+        existingOrders={orders}
         onSave={handleSave}
         isLoading={createMutation.isPending || updateMutation.isPending}
       />
@@ -211,6 +242,8 @@ export default function Agenda() {
         order={selectedOS}
         clients={clients}
         technicians={technicians}
+        existingAppointments={appointments}
+        existingOrders={orders}
         onSave={() => {}}
         readOnly={true}
       />
