@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/apiClient';
-import { Plus, Search, AlertTriangle, Package } from 'lucide-react';
+import { PackagePlus, Search, AlertTriangle, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -38,11 +38,12 @@ export default function Inventory() {
     i.category?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const lowStock = items.filter(i => i.min_quantity && i.quantity <= i.min_quantity);
+  const lowStock = items.filter(i => i.min_quantity && Number(i.quantity) <= Number(i.min_quantity));
 
   const handleSave = (data) => {
-    if (editingItem) {
-      updateMutation.mutate({ id: editingItem.id, data });
+    if (data.id) {
+      const { id, ...payload } = data;
+      updateMutation.mutate({ id, data: payload });
     } else {
       createMutation.mutate(data);
     }
@@ -52,7 +53,7 @@ export default function Inventory() {
     <div className="space-y-6">
       <PageHeader title="Estoque" subtitle={`${items.length} itens cadastrados`}>
         <Button onClick={() => { setEditingItem(null); setShowForm(true); }} className="gap-2">
-          <Plus className="w-4 h-4" /> Novo Item
+          <PackagePlus className="w-4 h-4" /> Entrada de Estoque
         </Button>
       </PageHeader>
 
@@ -80,6 +81,7 @@ export default function Inventory() {
                     <TableHead>Nome</TableHead>
                     <TableHead>SKU</TableHead>
                     <TableHead>Categoria</TableHead>
+                    <TableHead>Localização</TableHead>
                     <TableHead className="text-right">Qtd</TableHead>
                     <TableHead className="text-right">Mín</TableHead>
                     <TableHead className="text-right">Preço Unit.</TableHead>
@@ -88,21 +90,22 @@ export default function Inventory() {
                 </TableHeader>
                 <TableBody>
                   {filtered.map(item => {
-                    const isLow = item.min_quantity && item.quantity <= item.min_quantity;
+                    const isLow = item.min_quantity && Number(item.quantity) <= Number(item.min_quantity);
                     return (
                       <TableRow key={item.id} className="cursor-pointer hover:bg-muted/30" onClick={() => { setEditingItem(item); setShowForm(true); }}>
-                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell className="font-medium">{item.catalog_name || item.name || '-'}</TableCell>
                         <TableCell className="text-xs font-mono text-muted-foreground">{item.sku || '-'}</TableCell>
-                        <TableCell>{item.category || '-'}</TableCell>
+                        <TableCell>{item.catalog_category || item.category || '-'}</TableCell>
+                        <TableCell className="text-muted-foreground">{item.location_name || '-'}</TableCell>
                         <TableCell className="text-right">
                           <span className={isLow ? 'text-red-600 font-semibold' : ''}>{item.quantity}</span>
                           {isLow && <AlertTriangle className="w-3 h-3 text-red-500 inline ml-1" />}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">{item.min_quantity || '-'}</TableCell>
                         <TableCell className="text-right">
-                          {item.unit_price ? `R$ ${item.unit_price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
+                          {item.unit_price ? `R$ ${Number(item.unit_price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{item.supplier || '-'}</TableCell>
+                        <TableCell className="text-muted-foreground">{item.supplier_name || item.supplier || '-'}</TableCell>
                       </TableRow>
                     );
                   })}
@@ -119,6 +122,7 @@ export default function Inventory() {
         item={editingItem}
         onSave={handleSave}
         isLoading={createMutation.isPending || updateMutation.isPending}
+        allItems={items}
       />
     </div>
   );

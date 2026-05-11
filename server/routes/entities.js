@@ -15,7 +15,19 @@ const TABLE_MAP = {
   FinancialEntry: 'financial_entries',
   financial_entries: 'financial_entries',
   Appointment: 'appointments',
-  appointments: 'appointments'
+  appointments: 'appointments',
+  ProductCatalog: 'product_catalog',
+  productcatalog: 'product_catalog',
+  product_catalog: 'product_catalog',
+  Location: 'locations',
+  locations: 'locations',
+  location: 'locations',
+  Supplier: 'suppliers',
+  suppliers: 'suppliers',
+  supplier: 'suppliers',
+  ProductSupplier: 'product_supplier',
+  product_supplier: 'product_supplier',
+  productsupplier: 'product_supplier'
 };
 
 router.use(authMiddleware);
@@ -24,7 +36,9 @@ router.get('/:entity', async (req, res) => {
   const table = TABLE_MAP[req.params.entity];
   if (!table) return res.status(404).json({ error: 'Entidade inválida.' });
   try {
-    const [rows] = await db.query(`SELECT * FROM ${table} ORDER BY created_date DESC`);
+    // Usa a VIEW com JOINs para inventory_items para trazer catalog_name, catalog_category e location_name
+    const queryTable = table === 'inventory_items' ? 'inventory_items_view' : table;
+    const [rows] = await db.query(`SELECT * FROM ${queryTable} ORDER BY created_date DESC`);
     const parsed = rows.map(row => {
       const r = { ...row };
       ['tags', 'parts_used', 'photos'].forEach(key => {

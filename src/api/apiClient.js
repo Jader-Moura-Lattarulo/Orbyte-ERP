@@ -174,7 +174,11 @@ export const api = {
     Client: createApiEntity('Client'),
     InventoryItem: createApiEntity('InventoryItem'),
     FinancialEntry: createApiEntity('FinancialEntry'),
-    Appointment: createApiEntity('Appointment')
+    Appointment: createApiEntity('Appointment'),
+    ProductCatalog: createApiEntity('ProductCatalog'),
+    Location: createApiEntity('Location'),
+    Supplier: createApiEntity('Supplier'),
+    ProductSupplier: createApiEntity('ProductSupplier'),
   },
   
   integrations: {
